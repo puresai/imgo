@@ -1,0 +1,64 @@
+<html>
+<head>
+    <title>WebSocket test</title>
+</head>
+<body>
+    <script type="text/javascript">
+        function push8(arr, num) {
+            arr.push(num & 0xff)
+        }
+
+        function push16(arr, num) {
+            arr.push((num >> 8) & 0xff, num & 0xff)
+        }
+
+        function pushStr(arr, str) {
+            var n = str.length
+            for (var i = 0; i < n; i++) {
+                arr.push(str.charCodeAt(i))
+            }
+        }
+        var ws = null;
+        var url = "ws://127.0.0.1:1234/ws";
+
+        window.onload = function() {
+            ws = new WebSocket(url);
+            ws.binaryType = 'arraybuffer';
+            ws.onopen = function() {
+                console.log("connected to " + url);
+            }
+            wsSend = function(msg) {
+                var ba = []
+                push8(ba, 1)
+                push8(ba, 1)
+                push16(ba, msg.length)
+                pushStr(ba, msg)
+                ws.send((new Uint8Array(ba)).buffer)
+            }
+            ws.onclose = function(e) {
+                console.log("connection closed (" + e.code + ")");
+            }
+            ws.onmessage = function(e) {
+                a = new Uint8Array(e.data)
+                len = (a[2]<<8) + a[3];
+                body = a.slice(4,4+len)
+                console.warn("len"+len+", type"+a[0]+", body"+String.fromCharCode.apply(null, body))
+                wsSend("ok")
+            }
+        };
+
+        function send() {
+            var msg = document.getElementById('message').value;
+            wsSend(msg);
+        };
+    </script>
+    <h1>WebSocket Test</h1>
+    <form>
+        <p>
+            Message: <input id="message" type="text" value="Hello, world!">
+        </p>
+    </form>
+    <button onclick="send();">Send Message</button>
+    <div id="content"></div>
+</body>
+</html>
